@@ -6,7 +6,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import org.scalatest.FreeSpec
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 // pro-tip: you need to be extra careful not to add wrong dependency (e.g. javadsl in Scala source and vice-versa)
 // this is especially important when doing Scala, as Java ones will most often work, until you get into some weird
@@ -48,6 +48,19 @@ class SourceSpec extends FreeSpec {
       val stream: Future[Done] = source.runForeach(i => println(i))
       import scala.concurrent.ExecutionContext.Implicits.global // you should never use global context in real life
       stream.onComplete(_ => println("stream completed"))
+    }
+
+    "generate a periodical repetition of an object" in {
+      import scala.concurrent.duration._
+      // take(n) does what it says on the tin... yes, it is a Flow :)
+      val stream = Source.tick(2 seconds, 1 second, "*").take(5).runForeach(s => print(s + " "))
+      import scala.concurrent.ExecutionContext.Implicits.global // you should never use global context in real life
+      stream.onComplete(_ => println("stream completed"))
+      // gotcha!
+      // comment out this line to see... nothing printed
+      // yes! all previous examples worked by sheer luck :)
+      // also, without materialized value of Future[Done] how will you wait for the end of your stream processing?
+      Await.ready(stream, 10 seconds)
     }
   }
 }
