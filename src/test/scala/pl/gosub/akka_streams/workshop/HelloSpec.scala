@@ -11,8 +11,9 @@ import scala.concurrent.Future
 
 class HelloSpec extends FreeSpec {
   "An actor system and materializer should" - {
-    implicit val system = ActorSystem("Examples")
+    implicit val system = ActorSystem("HelloSpec")
     implicit val materializer = ActorMaterializer()
+
     "runForeach with a simple source" in {
       val source: Source[Int, NotUsed] = Source(1 to 10)
       source.runForeach(i => println(i))(materializer)
@@ -66,5 +67,7 @@ class HelloSpec extends FreeSpec {
       val stream = pipeline.run()
       stream.onComplete(_ => println("stream completed again!"))
     }
+
+    // Add here backpressure samples to illustrate the concept
   }
 }
