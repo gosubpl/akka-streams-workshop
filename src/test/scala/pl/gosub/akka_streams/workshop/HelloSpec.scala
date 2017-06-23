@@ -60,6 +60,7 @@ class HelloSpec extends FreeSpec {
       // more on this later
       // btw. you could Keep.both or whatever :)
       // Bonus question, why NotUsed and not e.g. Unit ?
+      // Hint: val flow: Flow[Int, Int, Cancellable] = throttler
 
       import scala.concurrent.ExecutionContext.Implicits.global // you should never use global context in real life
       val stream = pipeline.run()
