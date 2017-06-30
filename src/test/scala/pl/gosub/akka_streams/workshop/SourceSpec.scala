@@ -143,11 +143,14 @@ class SourceSpec extends FreeSpec {
     // maybe :)
     "create a source with a side-channel for communication with a flow" in {
       // simple use-case, for more complex usage look at the example in
-      // http://doc.akka.io/docs/akka/current/scala/stream/stream-flows-and-basics.html
+      // http://doc.akka.io/docs/akka/2.5.3/scala/stream/stream-flows-and-basics.html#flow-combine-mat
 
       // don't do it this way, you'll loose the access to the side-channel
       val wrongStream: Future[Done] = Source.maybe[Int].runForeach(s => println(s))
 
+      // toMat / Keep.both is the key
+      // for more detailed discussion:
+      // http://doc.akka.io/docs/akka/2.5.3/scala/stream/stream-composition.html#materialized-values
       val rightStream: (Promise[Option[Int]], Future[Done]) = Source.maybe[Int].toMat(Sink.foreach(s => println(s)))(Keep.both).run()
       val (handle, stream) = rightStream
       handle.completeWith(Future.successful(Some(42)))
