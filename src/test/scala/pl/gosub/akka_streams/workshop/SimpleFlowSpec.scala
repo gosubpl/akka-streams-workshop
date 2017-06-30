@@ -39,7 +39,7 @@ class SimpleFlowSpec extends FreeSpec {
       val source3 = Source(stringList)
       // mapConcat will do bad things to your strings...
       // why am I telling about that? there is statefulMapConcat
-      // but no statefulMap, so if you need state, you frequently end up with that problem
+      // but no statefulMap, so whenever you need state, you frequently end up with that problem
       val stream3 = source3.mapConcat(_.toUpperCase()).runWith(Sink.foreach(s => println(s)))
       stream3.onComplete(_ => println("stream completed"))
       Await.ready(stream3, 10 seconds)
@@ -50,5 +50,30 @@ class SimpleFlowSpec extends FreeSpec {
       stream4.onComplete(_ => println("stream completed"))
       Await.ready(stream4, 10 seconds)
     }
+
+    // other stages of interest:
+    // filter, filterNot, collect (filter + map, takes partial function)
+    // grouped, sliding
+    // fold, foldAsync, reduce (similar to Sink)
+    // scan, scanAsync (sort of online fold, see below)
+    // drop, take, dropWhile, takeWhile
+    // recover, recoverWith, recoverWithRetries, mapError
+    // detach (act like a buffer of size 1)
+    // limit, limitWeighted (limit is limitWeighted with constant weight function of 1)
+    // throttle
+    // intersperse
+    // log (that is cool, isn't it?)
+
+
+    // to cover:
+    // recover / recoverWith - continue the exception handling thread from the source thing
+
+    // scan, scanAsync, retry strategies  - deciders (intro) & log
+
+    // throttle (demo backpressure!) & intersperse
+
+    // detach, limit - they complement each other - limit fails the stage if there is more than limit elements in transit
+    // detach sees to that it does not happen - also backpressure
+
   }
 }
