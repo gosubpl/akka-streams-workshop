@@ -7,9 +7,9 @@ import akka.stream.{ActorMaterializer, Attributes}
 import org.scalatest.FreeSpec
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext.Implicits.global  // you should never use global context in real life
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future} // you should never use global context in real life
+import scala.concurrent.{Await, Future}
 
 class SinkSpec extends FreeSpec {
   "A properly materialized Sink should" - {
