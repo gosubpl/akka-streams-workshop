@@ -140,6 +140,13 @@ class SourceSpec extends FreeSpec {
       Await.ready(stream, 10 seconds)
     }
 
+    // now please take a break and go to SinkSpec to learn about "materialized values"
+    // which Sinks do a lot of
+    // ...
+    // Then come back here, to learn that "materialized value" actually is a "materialized variable"
+    // which means that you not only can read from it
+    // but you can also write to it.
+    // ...
     // maybe :)
     "create a source with a side-channel for communication with a flow" in {
       // simple use-case, for more complex usage look at the example in
