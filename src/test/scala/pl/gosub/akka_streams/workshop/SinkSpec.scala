@@ -2,15 +2,14 @@ package pl.gosub.akka_streams.workshop
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.{Keep, Sink, SinkQueueWithCancel, Source}
 import akka.stream.{ActorMaterializer, Attributes}
-import akka.stream.scaladsl.{Sink, SinkQueueWithCancel, Source}
 import org.scalatest.FreeSpec
 
 import scala.collection.immutable
-import scala.concurrent.{Await, Future}
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global // you should never use global context in real life
+import scala.concurrent.{Await, Future} // you should never use global context in real life
 
 class SinkSpec extends FreeSpec {
   "A properly materialized Sink should" - {
@@ -116,6 +115,19 @@ class SinkSpec extends FreeSpec {
           case None => sinkQueueNonEmpty = false
         }
       }
+    }
+
+    "materialize all elements easily with a fold" in {
+      val fivelist: List[Int] = List(1, 2, 3, 4, 5)
+      val source = Source(fivelist)
+      val sink: Sink[Int, Future[List[Int]]] = Sink.fold(List.empty[Int])((lst, elem: Int) => lst :+ elem)
+      // the interesting bit:
+      // cancels: If too many values are collected
+      // Int.MaxValue !
+      val stream: Future[List[Int]] = source.runWith(sink)
+
+      stream.onComplete(list => println("stream completed, value: " + list))
+      Await.ready(stream, 10 seconds)
     }
   }
 }
