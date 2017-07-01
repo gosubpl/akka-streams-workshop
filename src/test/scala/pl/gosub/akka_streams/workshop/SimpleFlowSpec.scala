@@ -73,38 +73,80 @@ class SimpleFlowSpec extends FreeSpec {
     // also recoverWithRetries is used in a 100 CONTINUE error case in HTTP processing - do you see it is a good match?
     // not a very well known stage :) also a part of setup people tend to use less -> dynamically created streams
     // very much possible with the new 2.5 materializer
-    "prevent silent failure in a Stream with recover" in {
+    "prevent failure in a Stream with recover" in {
       val stream = Source.failed(new RuntimeException("kaboom!")).recover {
-        case e: Exception => throw new RuntimeException("Stream failed because of an exception")
+        case e: Exception => new RuntimeException("Stream failed because of an exception")
         case _ => // do nothing
       }.runForeach(s => println(s))
 
       stream.onComplete(_ => println("stream completed"))
-      // now you can see what has happened
-      // however, the exception will still not be propagated outside the program
-      // this use case is similar to mapError
+      // Now you can see what has happened
+      // even if you do not analyse the underlying try :)
+      // However, the exception will still not be propagated outside the program
+      // and as you can see from the next example, the stream is now successful
+      // This use case is similar to mapError
+      Await.ready(stream, 10 seconds)
+    }
+
+    "prevent failure in a Stream with recover 2" in {
+      val stream = Source.failed(new RuntimeException("kaboom!")).recover {
+        // we can even copy the original exception
+        case e: Exception => e
+      }.runForeach(s => println(s))
+
+      // as you can see here the stream is now successful!
+      stream.onComplete(res => println("stream completed with outcome: " + res))
+      Await.ready(stream, 10 seconds)
+    }
+
+    "log failure in a Stream with recover" in {
+      val stream = Source.failed(new RuntimeException("kaboom!")).recover {
+        // notice small difference here, we throw instead of mapping
+        case e: Exception => throw new RuntimeException("Stream failed because of an exception")
+        case _ => // do nothing
+      }.runForeach(s => println(s))
+
+      stream.onComplete(res => println("stream completed with result: " + res))
+      // The exception will still not be propagated outside the program
+      // but contrary to the previous example, the stream is now a failure (see inside the Try)
+      // This use case is similar to mapError
       Await.ready(stream, 10 seconds)
     }
 
     "terminate the Stream gracefully with recover" in {
-      val stream = Source.failed(new RuntimeException("kaboom!")).recover{
+      val stream = Source.failed(new RuntimeException("kaboom!")).recover {
+        // we map an error to some meaningful value
         case _ => "TERMINATION TOKEN"
       }.runForeach(s => println(s))
 
-      stream.onComplete(_ => println("stream completed"))
+      stream.onComplete(v => println("stream completed with outcome: " + v))
       // you see the custom element supplied
       // this is what mapError cannot do
+      // Also, the stream is a success now
       Await.ready(stream, 10 seconds)
     }
 
-    "prevent silent failure in a Stream with mapError" in {
+    "map failure in a Stream with mapError" in {
+      val stream = Source.failed(new RuntimeException("kaboom!")).mapError {
+        case e: Exception => new IllegalArgumentException("something different")
+      }.runForeach(s => println(s))
+
+      stream.onComplete(res => println("stream completed with: " + res))
+      // now you can see what has happened
+      // however, contrary to recover you cannot supply your own element - you can only re-throw or throw a different exception
+      // and the stream is still a failure
+      Await.ready(stream, 10 seconds)
+    }
+
+    "log failure in a Stream with mapError" in {
       val stream = Source.failed(new RuntimeException("kaboom!")).mapError {
         case e: Exception => throw new IllegalArgumentException("something different")
       }.runForeach(s => println(s))
 
-      stream.onComplete(_ => println("stream completed"))
+      stream.onComplete(res => println("stream completed with: " + res))
       // now you can see what has happened
-      // however, you cannot supply your own element - you can only re-throw or throw a different exception
+      // contrary to the recover case, the stream is still a failure
+      // but as in the recover case the error gets logged when thrown inside the stage
       Await.ready(stream, 10 seconds)
     }
 
@@ -123,6 +165,7 @@ class SimpleFlowSpec extends FreeSpec {
     }
 
     // expand here more on http://doc.akka.io/docs/akka/current/scala/stream/stream-error.html
+    // or maybe in a separate spec :)
 
     // scan & log
     // see also http://doc.akka.io/docs/akka/current/scala/stream/stream-cookbook.html#logging-elements-of-a-stream
