@@ -46,6 +46,7 @@ class SimpleFlowSpec extends FreeSpec {
 
       val source4 = Source(stringList)
       // the solution, copied from akka-http StreamUtils.statefulMap, is to append Nil :)
+      // see also http://doc.akka.io/docs/akka/current/scala/stream/stream-cookbook.html#flattening-a-stream-of-sequences
       val stream4 = source4.mapConcat(_.toUpperCase() :: Nil).runWith(Sink.foreach(s => println(s)))
       stream4.onComplete(_ => println("stream completed"))
       Await.ready(stream4, 10 seconds)
@@ -121,17 +122,22 @@ class SimpleFlowSpec extends FreeSpec {
       Await.ready(stream, 10 seconds)
     }
 
+    // expand here more on http://doc.akka.io/docs/akka/current/scala/stream/stream-error.html
+
     // scan & log
+    // see also http://doc.akka.io/docs/akka/current/scala/stream/stream-cookbook.html#logging-elements-of-a-stream
 
     // mapAsync / mapAsyncUnordered / scanAsync - retry/supervision strategies
 
     // throttle (more demo backpressure) & intersperse
 
     // detach, buffer - backpressure and drop strategies
+    // see for more: http://doc.akka.io/docs/akka/current/scala/stream/stream-rate.html
 
     // limit / limitWeighted - limit errors the stage if there is more than limit elements to be processed by the
     // stream - this is useful if e.g. stream processes data to be later collected into some result
     // for further processing and we want to prevent unboundedness as soon as possible (close to origin/Source)
+    // see also http://doc.akka.io/docs/akka/current/scala/stream/stream-cookbook.html#draining-a-stream-to-a-strict-collection
 
   }
 }

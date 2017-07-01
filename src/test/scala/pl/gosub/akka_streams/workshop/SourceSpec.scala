@@ -92,6 +92,28 @@ class SourceSpec extends FreeSpec {
       Await.ready(stream, 10 seconds)
     }
 
+    "fail the stream with style 2" in {
+      val stream = Source.failed(new RuntimeException("kaboom!")).runForeach(s => println(s))
+      import scala.concurrent.duration._
+      import scala.concurrent.ExecutionContext.Implicits.global // you should never use global context in real life
+      stream.onComplete(res => println("stream completed with outcome: " + res))
+      // gotcha!
+      // however we can see that the result is a Try and peek inside for errors
+      Await.ready(stream, 10 seconds)
+    }
+
+    "fail the stream with style 3" in {
+      val source = Source(0 to 5).map(100 / _)
+      val stream = source.runWith(Sink.fold(0)(_ + _))
+      import scala.concurrent.duration._
+      import scala.concurrent.ExecutionContext.Implicits.global // you should never use global context in real life
+      stream.onComplete(v => println("stream completed with value: " + v))
+      // gotcha!
+      // if you are impatient -> read here http://doc.akka.io/docs/akka/current/scala/stream/stream-error.html
+      // we will cover that subject in depth when discussing recover/mapError
+      Await.ready(stream, 10 seconds)
+    }
+
     "unfold the given function" in {
       def fun(v: (Int, Int)): Option[((Int, Int), Int)] = {
         // caveat!
