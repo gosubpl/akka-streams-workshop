@@ -1,7 +1,5 @@
 package pl.gosub.akka_streams.workshop
 
-import java.util.Locale
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Flow, Keep, Sink, SinkQueueWithCancel, Source}
@@ -164,15 +162,11 @@ class SimpleFlowSpec extends FreeSpec {
       Await.ready(stream, 10 seconds)
     }
 
-    // expand here more on http://doc.akka.io/docs/akka/current/scala/stream/stream-error.html
-    // or maybe in a separate spec :)
+    // more on Error handling in AsyncFlowSpec
+    // and http://doc.akka.io/docs/akka/current/scala/stream/stream-error.html
+    // please go to AsyncFlowSpec now and then return here :)
 
-    // scan & log
-    // see also http://doc.akka.io/docs/akka/current/scala/stream/stream-cookbook.html#logging-elements-of-a-stream
-
-    // mapAsync / mapAsyncUnordered / scanAsync - retry/supervision strategies
-
-    // throttle (more demo backpressure) & intersperse
+    // throttle (more on backpressure) & intersperse
 
     // detach, buffer - backpressure and drop strategies
     // see for more: http://doc.akka.io/docs/akka/current/scala/stream/stream-rate.html
