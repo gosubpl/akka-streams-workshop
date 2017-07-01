@@ -10,7 +10,7 @@ import org.scalatest.FreeSpec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Random, Try}
 
 // Error handling details here: http://doc.akka.io/docs/akka/current/scala/stream/stream-error.html
 // Some examples adapted from there
@@ -169,6 +169,36 @@ class AsyncFlowSpec extends FreeSpec {
     }
 
     // mapAsync / mapAsyncUnordered / scanAsync - retry/supervision strategies
+    "use mapAsync to asynchronously map things" in {
+      val source: Source[Int, NotUsed] = Source(0 to 10)
+      // change to mapAsyncUnordered to see the difference :)
+      // 11 means that all elements will be processed in parallel
+      val flow = Flow[Int].mapAsync(11) {
+        i =>
+          if (i % 2 == 0)
+            Future.failed[Int](new IllegalArgumentException("don't accept numbers divisible by 2"))
+          else {
+            Future {
+              Thread.sleep(Random.nextInt(100))
+              i
+            }
+          }
+      }
+      val stream = source.via(flow).runWith(Sink.fold(0)(_ + _))
+      stream.awaitOnCompleteAndPrint
+
+      // with resuming decider
+      val flow2 = flow.withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
+      val stream2 = source.via(flow2)
+        .runWith(Sink.foreach(println))
+      stream2.awaitOnCompleteAndPrint
+
+      // with restarting decider
+      val flow3 = flow.withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+      val stream3 = source.via(flow3)
+        .runWith(Sink.foreach(println))
+      stream3.awaitOnCompleteAndPrint
+    }
   }
 }
 
