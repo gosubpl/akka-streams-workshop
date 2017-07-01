@@ -175,6 +175,10 @@ class SourceSpec extends FreeSpec {
       // simple use-case, for more complex usage look at the example in
       // http://doc.akka.io/docs/akka/2.5.3/scala/stream/stream-flows-and-basics.html#flow-combine-mat
 
+      // what is the type of this...
+      val strangeSource: Source[Int, Promise[Option[Int]]] = Source.maybe[Int]
+      // aha! no NotUsed, but Promise[Option[Int]] instead... how to access it?
+
       // don't do it this way, you'll loose the access to the side-channel
       val wrongStream: Future[Done] = Source.maybe[Int].runForeach(s => println(s))
 
