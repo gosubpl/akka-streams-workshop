@@ -77,7 +77,8 @@ class SourceSpec extends FreeSpec {
       import scala.concurrent.ExecutionContext.Implicits.global // you should never use global context in real life
       stream.onComplete(_ => println("stream completed"))
       // gotcha!
-      // The exception has been swallowed, the stream completed... TODO
+      // The exception has been swallowed, the stream completed...
+      // see recover/mapError in SimpleFlowSpec
       Await.ready(stream, 10 seconds)
     }
 
@@ -87,7 +88,7 @@ class SourceSpec extends FreeSpec {
       import scala.concurrent.ExecutionContext.Implicits.global // you should never use global context in real life
       stream.onComplete(_ => println("stream completed"))
       // gotcha!
-      // FIXME: tell what has happened :)
+      // however -> see recover/mapError in SimpleFlowSpec
       Await.ready(stream, 10 seconds)
     }
 

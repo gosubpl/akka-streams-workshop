@@ -65,8 +65,46 @@ class SimpleFlowSpec extends FreeSpec {
     // log (that is cool, isn't it?)
 
 
-    // to cover:
+    // not so easy to understand simple stages to cover:
     // recover / recoverWith - continue the exception handling thread from the source thing
+    // also throw an exception -> so this is for actually making stream not fail silently
+    // cool usage in akka-http decodeRequestWith
+    // not a very well known stage :) also a part of setup people tend to use less -> dynamically created streams
+    // very much possible with the new 2.5 materializer
+    "prevent silent failure in a Stream with recover" in {
+      val stream = Source.failed(new RuntimeException("kaboom!")).recover {
+        case e: Exception => throw new RuntimeException("Stream failed because of an exception")
+        case _ => // do nothing
+      }.runForeach(s => println(s))
+
+      stream.onComplete(_ => println("stream completed"))
+      // now you can see what has happened
+      // however, the exception will still not be propagated outside the program
+      // this use case is similar to mapError
+      Await.ready(stream, 10 seconds)
+    }
+
+    "terminate the Stream gracefully with recover" in {
+      val stream = Source.failed(new RuntimeException("kaboom!")).recover{
+        case _ => "TERMINATION TOKEN"
+      }.runForeach(s => println(s))
+
+      stream.onComplete(_ => println("stream completed"))
+      // you see the custom element supplied
+      // this is what mapError cannot do
+      Await.ready(stream, 10 seconds)
+    }
+
+    "prevent silent failure in a Stream with mapError" in {
+      val stream = Source.failed(new RuntimeException("kaboom!")).mapError {
+        case e: Exception => throw new IllegalArgumentException("something different")
+      }.runForeach(s => println(s))
+
+      stream.onComplete(_ => println("stream completed"))
+      // now you can see what has happened
+      // however, you cannot supply your own element - you can only re-throw or throw a different exception
+      Await.ready(stream, 10 seconds)
+    }
 
     // scan, scanAsync, retry strategies  - deciders (intro) & log
 
