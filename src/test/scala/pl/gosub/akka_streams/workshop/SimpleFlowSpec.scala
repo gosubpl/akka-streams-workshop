@@ -121,12 +121,17 @@ class SimpleFlowSpec extends FreeSpec {
       Await.ready(stream, 10 seconds)
     }
 
-    // scan, scanAsync, retry strategies  - deciders (intro) & log
+    // scan & log
 
-    // throttle (demo backpressure!) & intersperse
+    // mapAsync / mapAsyncUnordered / scanAsync - retry/supervision strategies
 
-    // detach, limit - they complement each other - limit fails the stage if there is more than limit elements in transit
-    // detach sees to that it does not happen - also backpressure
+    // throttle (more demo backpressure) & intersperse
+
+    // detach, buffer - backpressure and drop strategies
+
+    // limit / limitWeighted - limit errors the stage if there is more than limit elements to be processed by the
+    // stream - this is useful if e.g. stream processes data to be later collected into some result
+    // for further processing and we want to prevent unboundedness as soon as possible (close to origin/Source)
 
   }
 }
