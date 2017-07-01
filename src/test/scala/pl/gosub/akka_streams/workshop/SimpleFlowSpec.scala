@@ -69,6 +69,7 @@ class SimpleFlowSpec extends FreeSpec {
     // recover / recoverWith - continue the exception handling thread from the source thing
     // also throw an exception -> so this is for actually making stream not fail silently
     // cool usage in akka-http decodeRequestWith
+    // also recoverWithRetries is used in a 100 CONTINUE error case in HTTP processing - do you see it is a good match?
     // not a very well known stage :) also a part of setup people tend to use less -> dynamically created streams
     // very much possible with the new 2.5 materializer
     "prevent silent failure in a Stream with recover" in {
@@ -103,6 +104,20 @@ class SimpleFlowSpec extends FreeSpec {
       stream.onComplete(_ => println("stream completed"))
       // now you can see what has happened
       // however, you cannot supply your own element - you can only re-throw or throw a different exception
+      Await.ready(stream, 10 seconds)
+    }
+
+    "swithch the Source in the failing Stream using recoverWith" in {
+      val alternativeSource = Source(List(1, 2, 3))
+      // recoverWith is deprecated
+      // you should use recoverWithRetries(-1, ...)
+      // which is essentially what recoverWith meant until the deprecation :)
+      val stream = Source.failed(new RuntimeException("kaboom!")).recoverWith {
+        case _ => alternativeSource
+      }.runForeach(s => println(s))
+
+      stream.onComplete(_ => println("stream completed"))
+      // you see the elements from alternative source supplied
       Await.ready(stream, 10 seconds)
     }
 
