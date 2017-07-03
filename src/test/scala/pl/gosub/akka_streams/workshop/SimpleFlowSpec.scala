@@ -278,6 +278,18 @@ class SimpleFlowSpec extends FreeSpec {
       Thread.sleep(1000)
     }
 
+    // now go to the SinkSpec Source.queue example to look at the inputBuffer setting
+    // global setting is akka.stream.materializer.max-input-buffer-size (= 16)
+    // you can also set settings as .withInputBuffer(initialSize = 64, maxSize = 64) at the materializer level
+    // please remember that there is lots of fusing, which means that every materialized island has its own buffer
+    // but the stages inside an island are connected directly, without any buffer in-between
+    // hence the ususal explanation of how backpressure works (pull/push) is only an approximation
+    // Also - there is some good advice in the manual to set inputBuffer to 1/1 in case of any performance issues
+    // shape of the islands depend on particular materializer, and this can change (e.g. at 2.0-M2 or between 2.4 and 2.5)
+
+    // now on to Buffer and Detach to see those ideas implemented in Flow elements
+    // FIXME: continue here
+
     // detach, buffer - backpressure and drop strategies
     // see for more: http://doc.akka.io/docs/akka/current/scala/stream/stream-rate.html
 
