@@ -1,15 +1,13 @@
 package pl.gosub.akka_streams.workshop
 
-import akka.Done
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Flow, Keep, Sink, SinkQueueWithCancel, Source}
-import akka.stream.{ActorMaterializer, Attributes}
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, OverflowStrategy, ThrottleMode}
 import org.scalatest.FreeSpec
 
-import scala.collection.immutable
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 
 class SimpleFlowSpec extends FreeSpec {
   "A properly materialized simple Flow should" - {
@@ -49,6 +47,7 @@ class SimpleFlowSpec extends FreeSpec {
       stream4.onComplete(_ => println("stream completed"))
       Await.ready(stream4, 10 seconds)
     }
+  }
 
     // other stages of interest:
     // filter, filterNot, collect (filter + map, takes partial function)
@@ -71,6 +70,10 @@ class SimpleFlowSpec extends FreeSpec {
     // also recoverWithRetries is used in a 100 CONTINUE error case in HTTP processing - do you see it is a good match?
     // not a very well known stage :) also a part of setup people tend to use less -> dynamically created streams
     // very much possible with the new 2.5 materializer
+  "A Flow should in the case of recovery" - {
+    implicit val system = ActorSystem("SimpleFlowSpec")
+    implicit val materializer = ActorMaterializer()
+
     "prevent failure in a Stream with recover" in {
       val stream = Source.failed(new RuntimeException("kaboom!")).recover {
         case e: Exception => new RuntimeException("Stream failed because of an exception")
@@ -148,7 +151,7 @@ class SimpleFlowSpec extends FreeSpec {
       Await.ready(stream, 10 seconds)
     }
 
-    "swithch the Source in the failing Stream using recoverWith" in {
+    "switch the Source in the failing Stream using recoverWith" in {
       val alternativeSource = Source(List(1, 2, 3))
       // recoverWith is deprecated
       // you should use recoverWithRetries(-1, ...)
@@ -161,12 +164,119 @@ class SimpleFlowSpec extends FreeSpec {
       // you see the elements from alternative source supplied
       Await.ready(stream, 10 seconds)
     }
+  }
 
     // more on Error handling in AsyncFlowSpec
     // and http://doc.akka.io/docs/akka/current/scala/stream/stream-error.html
     // please go to AsyncFlowSpec now and then return here :)
 
+    // ...
+
+    // ok, welcome back after the break :)
+  "A Flow to show how backpressure works" - {
+    implicit val system = ActorSystem("SimpleFlowSpec")
+    implicit val materializer = ActorMaterializer()
+
     // throttle (more on backpressure) & intersperse
+    // plus Source.queue
+
+    // Remember the Tick example? We were getting an element second or so
+    // can we somehow achieve the same effect with a Flow element?
+    // Sure, use throttle :)
+    "use throttle to shape the traffic from a Source" in {
+      val source = Source(1 to 5)
+      // shape the traffic
+      // 1 element per 200 millis, 0 elements max saved for later (burst rate / bucket capacity)
+      val stream = source.throttle(1, Duration(200, "millisecond"), 0, ThrottleMode.shaping)
+        .runForeach(s => println(s))
+      stream.onComplete(_ => println("Stream completed"))
+      Await.ready(stream, 10 seconds)
+      // 1 element per 200 millis, 2 elements max saved for later (burst rate / bucket capacity)
+      val stream2 = source.throttle(1, Duration(200, "millisecond"), 2, ThrottleMode.shaping)
+        .runForeach(s => println(s))
+      stream2.onComplete(_ => println("Stream completed"))
+      Await.ready(stream2, 10 seconds)
+    }
+
+    "demo the maxBurst parameter in Throttle" in {
+      val source = Source(1 to 10)
+      // 4 elements per 800 millis, up to 5 in one go
+      val stream = source.throttle(4, Duration(2000, "millisecond"), 5, ThrottleMode.shaping)
+        .runForeach(s => println(s))
+      stream.onComplete(_ => println("Stream completed"))
+      Await.ready(stream, 10 seconds)
+    }
+
+    "use throttle to demo the enforcing mode" in {
+      val source = Source(1 to 5)
+      // shape the traffic
+      // 1 element per 200 millis, 0 elements max saved for later (burst rate / bucket capacity)
+      val stream = source.throttle(1, Duration(200, "millisecond"), 2, ThrottleMode.enforcing)
+        .runForeach(s => println(s))
+      stream.onComplete(res => println("Stream completed with result: " + res))
+      Await.ready(stream, 10 seconds)
+      val stream2 = source
+        .throttle(1, Duration(300, "millisecond"), 0, ThrottleMode.shaping)
+        // in enforcing throttle, maxBurst must be > 0
+        // it is actually the number of elements after which the throttle condition is checked
+        // if it is 0 then Throttle will fail immediately...
+        .throttle(2, Duration(400, "millisecond"), 1, ThrottleMode.enforcing)
+        .runForeach(s => println(s))
+      stream2.onComplete(res => println("Stream completed with result: " + res))
+      Await.ready(stream2, 10 seconds)
+    }
+
+    "show how Source.queue interacts with Throttle in backpressure mode" in {
+      // backpressure strategy says - if downstream is too slow, wait on accepting element in offer()
+      // until the stream can accept additional elements
+      val source = Source.queue[Int](5, OverflowStrategy.backpressure)
+      // akka-streams idiom, need to do it this way, instead of runForeach to get the queue out as materialized value
+      val sourceQueue = source.throttle(1, 500 millis, 1, ThrottleMode.shaping)
+        .to(Sink.foreach(println))
+        .run()
+      // be careful, for offer returns a Future :)
+      var i = 0
+      while (i < 10) {
+        i += 1
+        Await.ready(sourceQueue.offer(i), 10 seconds)
+      }
+      // all elements (maybe except the last :) ) processed, let's conclude the stream (we could also fail() the stream)
+      Thread.sleep(1000) // look at what offer() returns to understand why there might be a race here :)
+      sourceQueue.complete()
+      // for queues .onComplete will not work
+      // you need to use watch completion
+      val done = sourceQueue.watchCompletion()
+      done.onComplete(_ => println("Stream completed"))
+      Await.ready(done, 10 seconds)
+      // another race - wait for the last number to be printed ...
+      // can complete travel faster downstream than elements? maybe... ;)
+      Thread.sleep(1000)
+    }
+
+    "show how Source.queue interacts with Throttle in dropNew mode" in {
+      // backpressure strategy says - if downstream is too slow, drop all new elements
+      // coming via offer()
+      // in this case, it means only elements 1-5 will be processed ... or will they?
+      val source = Source.queue[Int](5, OverflowStrategy.dropNew)
+      // 1 in maxBurst below will give you elements 1-7, 2 will give you 1-8 etc...
+      // 0 should probably give you 1-6 :)
+      val sourceQueue = source.throttle(1, 500 millis, 1, ThrottleMode.shaping)
+        .to(Sink.foreach(println))
+        .run()
+      var i = 0
+      while (i < 10) {
+        i += 1
+        Await.ready(sourceQueue.offer(i), 10 seconds)
+      }
+      // all elements (maybe except the last :) ) processed, let's conclude the stream (we could also fail() the stream)
+      Thread.sleep(1000)
+      sourceQueue.complete()
+      val done = sourceQueue.watchCompletion()
+      done.onComplete(_ => println("Stream completed"))
+      Await.ready(done, 10 seconds)
+      // another possible race - so wait to check if we have really printed all elements
+      Thread.sleep(1000)
+    }
 
     // detach, buffer - backpressure and drop strategies
     // see for more: http://doc.akka.io/docs/akka/current/scala/stream/stream-rate.html
