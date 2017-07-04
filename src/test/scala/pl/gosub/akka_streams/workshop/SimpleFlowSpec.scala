@@ -287,7 +287,7 @@ class SimpleFlowSpec extends FreeSpec {
     // hence the usual explanation of how backpressure works (pull/push) is only an approximation.
     // Also - there is some good advice in the manual to set inputBuffer to 1/1 in case of any performance issues.
     // Shape of the islands depend on particular materializer, and this can change (e.g. at 2.0-M2 or between 2.4 and 2.5).
-    // Since 2.5 you the setting telling Akka not to do fusing is ignored :) .
+    // Since 2.5 the setting telling Akka not to do fusing is ignored :) .
     // You can always request your stage to be separate by adding .async parameter.
 
     // now on to Buffer and Detach to see those ideas implemented in Flow elements
