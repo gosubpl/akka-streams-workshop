@@ -278,14 +278,17 @@ class SimpleFlowSpec extends FreeSpec {
       Thread.sleep(1000)
     }
 
-    // now go to the SinkSpec Source.queue example to look at the inputBuffer setting
-    // global setting is akka.stream.materializer.max-input-buffer-size (= 16)
-    // you can also set settings as .withInputBuffer(initialSize = 64, maxSize = 64) at the materializer level
-    // please remember that there is lots of fusing, which means that every materialized island has its own buffer
-    // but the stages inside an island are connected directly, without any buffer in-between
-    // hence the ususal explanation of how backpressure works (pull/push) is only an approximation
-    // Also - there is some good advice in the manual to set inputBuffer to 1/1 in case of any performance issues
-    // shape of the islands depend on particular materializer, and this can change (e.g. at 2.0-M2 or between 2.4 and 2.5)
+    // Now go to the SinkSpec Source.queue example to look at the inputBuffer setting,
+    // global setting is akka.stream.materializer.max-input-buffer-size (= 16).
+    // You can also set settings as .withInputBuffer(initialSize = 64, maxSize = 64) at the materializer level.
+    // Please remember that there is lots of fusing, which means that every materialized island has its own buffers
+    // (to be precise: one inputBuffer per each input slot)
+    // but the stages inside an island are connected directly, without any buffers inbetween,
+    // hence the usual explanation of how backpressure works (pull/push) is only an approximation.
+    // Also - there is some good advice in the manual to set inputBuffer to 1/1 in case of any performance issues.
+    // Shape of the islands depend on particular materializer, and this can change (e.g. at 2.0-M2 or between 2.4 and 2.5).
+    // Since 2.5 you the setting telling Akka not to do fusing is ignored :) .
+    // You can always request your stage to be separate by adding .async parameter.
 
     // now on to Buffer and Detach to see those ideas implemented in Flow elements
     // FIXME: continue here
