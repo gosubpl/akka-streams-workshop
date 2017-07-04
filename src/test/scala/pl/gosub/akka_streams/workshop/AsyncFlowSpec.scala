@@ -205,6 +205,8 @@ class AsyncFlowSpec extends FreeSpec {
 object FutureExtensions {
 
   implicit class FutureLocalOps[T](val fut: Future[T]) extends AnyVal {
+    def awaitVeryLongAndPrint = awaitOnComplete(returnValue => println("Stream completed with value: " + returnValue), 100.seconds)
+
     def awaitOnCompleteAndPrint = awaitOnComplete(returnValue => println("Stream completed with value: " + returnValue))
 
     def awaitOnComplete[U](f: Try[T] => U, timeout: Duration = 10 seconds): Unit = {

@@ -254,7 +254,7 @@ class SimpleFlowSpec extends FreeSpec {
     }
 
     "show how Source.queue interacts with Throttle in dropNew mode" in {
-      // backpressure strategy says - if downstream is too slow, drop all new elements
+      // dropNew strategy says - if downstream is too slow, drop all new elements
       // coming via offer()
       // in this case, it means only elements 1-5 will be processed ... or will they?
       val source = Source.queue[Int](5, OverflowStrategy.dropNew)
