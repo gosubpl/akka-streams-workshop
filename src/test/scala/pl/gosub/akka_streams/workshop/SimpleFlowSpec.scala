@@ -291,15 +291,58 @@ class SimpleFlowSpec extends FreeSpec {
     // You can always request your stage to be separate by adding .async parameter.
 
     // now on to Buffer and Detach to see those ideas implemented in Flow elements
-    // FIXME: continue here
-
-    // detach, buffer - backpressure and drop strategies
     // see for more: http://doc.akka.io/docs/akka/current/scala/stream/stream-rate.html
+
+    // We can have an explicit buffer in akka-streams, to adjust the difference between fast producer and slow consumer
+    // bear in mind, that if the difference is permanent, then we need to do something about superfluous elements
+    // there is a couple of OverflowStrategies there
+    "demo the dropTail overflow strategy using Buffer" in {
+      val source = Source(1 to 10)
+      // 4 elements per 800 millis, up to 5 in one go
+      val stream = source
+        .throttle(1, 100.millis, 0, ThrottleMode.shaping)
+        // without buffer in between, we would just get numbers 1-10, one each 500 millis
+        // now with a buffer... in between
+        // you can test various strategies here
+        .buffer(5, OverflowStrategy.dropTail)
+        .throttle(1, 500.millis, 0, ThrottleMode.shaping)
+        .runForeach(s => println(s))
+      stream.onComplete(_ => println("Stream completed"))
+      Await.ready(stream, 10.seconds)
+    }
+
+    // detach is like buffer(1, OverflowStrategy.backpressure)
+    "demo the detach stage" in {
+      val source = Source(1 to 10)
+      // 4 elements per 800 millis, up to 5 in one go
+      val stream = source
+        .throttle(1, 100.millis, 0, ThrottleMode.shaping)
+        .detach
+        .throttle(1, 500.millis, 0, ThrottleMode.shaping)
+        .runForeach(s => println(s))
+      stream.onComplete(_ => println("Stream completed"))
+      Await.ready(stream, 10.seconds)
+    }
 
     // limit / limitWeighted - limit errors the stage if there is more than limit elements to be processed by the
     // stream - this is useful if e.g. stream processes data to be later collected into some result
     // for further processing and we want to prevent unboundedness as soon as possible (close to origin/Source)
     // see also http://doc.akka.io/docs/akka/current/scala/stream/stream-cookbook.html#draining-a-stream-to-a-strict-collection
+    "demo the limit stage" in {
+      val source = Source(1 to 10)
+      val stream = source
+        .limit(100)
+        .runForeach(s => println(s))
+      stream.onComplete(res => println("Stream completed with result: " + res))
+      Await.ready(stream, 10.seconds)
+      val stream2 = source
+        .limit(5)
+        .runForeach(s => println(s))
+      // please note that exception message is off-by-one:
+      // Stream completed with result: Failure(akka.stream.StreamLimitReachedException: limit of 5 reached)
+      stream2.onComplete(res => println("Stream completed with result: " + res))
+      Await.ready(stream2, 10.seconds)
+    }
 
   }
 }
