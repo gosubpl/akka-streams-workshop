@@ -1,0 +1,12 @@
+There are challenges !
+   - map string to upper case
+   - sum all elements greater than 5
+   - sum all elements greater than 5 skipping every third element
+
+   - remove immediate duplicates from the stream (a'la unix uniq)
+   - remove duplicates from the stream (at what cost? and if that was only approximate?)
+   - calculate moving average (what definition of moving average? - let's say last 5 or 10 items averaged)
+     anharmonic average ;)
+   - break stream of ByteStrings into words and then uppercase them
+
+   - ...

@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 
 class SimpleFlowSpec extends FreeSpec {
   "A properly materialized simple Flow should" - {
-    implicit val system = ActorSystem("SimpleFlowSpec")
+    implicit val system = ActorSystem("SimpleFlowSpec-1")
     implicit val materializer = ActorMaterializer()
 
     // Sinks do a lot of side effects
@@ -71,7 +71,7 @@ class SimpleFlowSpec extends FreeSpec {
     // not a very well known stage :) also a part of setup people tend to use less -> dynamically created streams
     // very much possible with the new 2.5 materializer
   "A Flow should in the case of recovery" - {
-    implicit val system = ActorSystem("SimpleFlowSpec")
+    implicit val system = ActorSystem("SimpleFlowSpec-2")
     implicit val materializer = ActorMaterializer()
 
     "prevent failure in a Stream with recover" in {
@@ -174,7 +174,7 @@ class SimpleFlowSpec extends FreeSpec {
 
     // ok, welcome back after the break :)
   "A Flow to show how backpressure works" - {
-    implicit val system = ActorSystem("SimpleFlowSpec")
+    implicit val system = ActorSystem("SimpleFlowSpec-3")
     implicit val materializer = ActorMaterializer()
 
     // throttle (more on backpressure) & intersperse
@@ -290,6 +290,9 @@ class SimpleFlowSpec extends FreeSpec {
     // Since 2.5 the setting telling Akka not to do fusing is ignored :) .
     // You can always request your stage to be separate by adding .async parameter.
 
+    // There is more to understand on materialisation, concurrency and .async, read more there
+    //  http://akka.io/blog/2016/07/06/threading-and-concurrency-in-akka-streams-explained
+
     // now on to Buffer and Detach to see those ideas implemented in Flow elements
     // see for more: http://doc.akka.io/docs/akka/current/scala/stream/stream-rate.html
 
@@ -344,5 +347,6 @@ class SimpleFlowSpec extends FreeSpec {
       Await.ready(stream2, 10.seconds)
     }
 
+    // There is more to understand on
   }
 }

@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 
 // for graphs -> one example just flow the other with integrated source
 // which will need this more complex builder
+// Source, Flow, etc BidiFlow.fromGraph(...)
 class GraphSpec extends FreeSpec {
 
 }
