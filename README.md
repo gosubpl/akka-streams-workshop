@@ -58,6 +58,19 @@ https://github.com/gosubpl/akka-online/blob/master/src/main/scala/pl/gosub/akka/
 
 https://github.com/gosubpl/akka-online/blob/master/src/main/scala/pl/gosub/akka/online/KadaneFlowActor.scala
 
+NotUsed and materialized values in general
+
+https://manuel.bernhardt.io/2017/05/22/akka-streams-notused/
+
+http://engineering.intenthq.com/2015/06/wikidata-akka-streams/
+
+Overflow strategies
+
+http://cjwebb.github.io/blog/2016/06/28/learning-akka-streams/
+
+http://chariotsolutions.com/blog/post/simply-explained-akka-streams-backpressure/
+
+
 Unclassified
 
 https://github.com/hseeberger/demo-akka-streams-pi/blob/master/src/main/scala/de/heikoseeberger/pi/PiApp.scala
@@ -65,5 +78,7 @@ https://github.com/hseeberger/demo-akka-streams-pi/blob/master/src/main/scala/de
 https://sachabarbs.wordpress.com/2016/12/13/akka-streams/
 
 https://blog.redelastic.com/diving-into-akka-streams-2770b3aeabb0
+
+https://github.com/typesafehub/activator-akka-stream-scala/blob/master/src/main/scala/sample/stream/
 
 
